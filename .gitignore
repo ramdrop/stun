@@ -1,0 +1,5 @@
+pittsburgh/
+tmp/
+__pycache__/
+logs/
+*.zip
