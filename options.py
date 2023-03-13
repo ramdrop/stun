@@ -1,16 +1,18 @@
-from genericpath import exists
-import os
-import json
 import argparse
-import numpy as np
+import json
+import os
 import random
+
+import numpy as np
 import torch
+from genericpath import exists
+
 
 class Options:
     def __init__(self):
         self.parser = argparse.ArgumentParser(description="Options")
-        self.parser.add_argument('--phase', type=str, default='test_stu', help='phase')
-        self.parser.add_argument('--dataset', type=str, default='pittsburgh', help='choose dataset.')
+        self.parser.add_argument('--phase', type=str, default='test_tea', help='phase', choices=['train_tea', 'test_tea', 'train_stu', 'test_stu'])
+        self.parser.add_argument('--dataset', type=str, default='pitts', help='choose dataset.')
         self.parser.add_argument('--structDir', type=str, default='pittsburgh/structure', help='Path for structure.')
         self.parser.add_argument('--imgDir', type=str, default='pittsburgh', help='Path for images.')
         self.parser.add_argument('--com', type=str, default='', help='comment')
@@ -32,20 +34,20 @@ class Options:
         self.parser.add_argument('--optim', type=str, default='adam', help='optimizer to use', choices=['sgd', 'adam'])
         self.parser.add_argument('--lr', type=float, default=1e-5, help='Learning Rate.')
         self.parser.add_argument('--lrStep', type=float, default=5, help='Decay LR ever N steps.')
-        self.parser.add_argument('--lrGamma', type=float, default=0.5, help='Multiply LR by Gamma for decaying.')
+        self.parser.add_argument('--lrGamma', type=float, default=0.99, help='Multiply LR by Gamma for decaying.')
         self.parser.add_argument('--weightDecay', type=float, default=0.001, help='Weight decay for SGD.')
         self.parser.add_argument('--momentum', type=float, default=0.9, help='Momentum for SGD.')
         self.parser.add_argument('--cuda', action='store_false', help='use cuda')
         self.parser.add_argument('--d', action='store_true', help='debug mode')
         self.parser.add_argument('--threads', type=int, default=8, help='Number of threads for each data loader to use')
         self.parser.add_argument('--seed', type=int, default=1234, help='Random seed to use.')
-        self.parser.add_argument('--logsPath', type=str, default='./logs_full', help='Path to save runs to.')
+        self.parser.add_argument('--logsPath', type=str, default='./logs', help='Path to save runs to.')
         self.parser.add_argument('--runsPath', type=str, default='not defined', help='Path to save runs to.')
         self.parser.add_argument('--resume', type=str, default='', help='Path to load checkpoint from, for resuming training or testing.')
         self.parser.add_argument('--evalEvery', type=int, default=1, help='Do a validation set run, and save, every N epochs.')
         self.parser.add_argument('--cacheRefreshEvery', type=int, default=1, help='refresh embedding cache, every N epochs.')
-        self.parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping. 0 is off.')
-        self.parser.add_argument('--split', type=str, default='test', help='Split to use', choices=['val', 'test'])
+        self.parser.add_argument('--patience', type=int, default=10, help='Patience for early stopping. 0 is off.')
+        self.parser.add_argument('--split', type=str, default='val', help='Split to use', choices=['val', 'test'])
         self.parser.add_argument('--encoder_dim', type=int, default=512, help='Number of feature dimension. Default=512')
 
     def parse(self):
@@ -56,16 +58,16 @@ class Options:
         if not exists(flag_file):
             raise ValueError('{} not exist'.format(flag_file))
         # restore_var = ['runsPath', 'net', 'seqLen', 'num_clusters', 'output_dim', 'structDir', 'imgDir', 'lrStep', 'lrGamma', 'weightDecay', 'momentum', 'num_clusters', 'optim', 'margin', 'seed', 'patience']
-        black_list = ['resume', 'cGPU', 'mode', 'phase', 'optim', 'split']
+        do_not_update_list = ['resume', 'mode', 'phase', 'optim', 'split']
         if os.path.exists(flag_file):
             with open(flag_file, 'r') as f:
                 # stored_flags = {'--' + k: str(v) for k, v in json.load(f).items() if k in restore_var}
-                stored_flags = {'--' + k: str(v) for k, v in json.load(f).items() if k not in black_list}
+                stored_flags = {'--' + k: str(v) for k, v in json.load(f).items() if k not in do_not_update_list}
                 to_del = []
                 for flag, val in stored_flags.items():
                     for act in self.parser._actions:
-                        if act.dest == flag[2:]:    # stored parser match current parser
-                            # store_true / store_false args don't accept arguments, filter these
+                        if act.dest == flag[2:]:                                                   # stored parser match current parser
+                                                                                                   # store_true / store_false args don't accept arguments, filter these
                             if type(act.const) == type(True):
                                 if val == str(act.default):
                                     to_del.append(flag)

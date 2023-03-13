@@ -1,13 +1,11 @@
 #%%
-from scipy import stats
 import pickle
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-from os.path import join, dirname
+from os.path import join
 import utils
 import importlib
-from sklearn.neighbors import NearestNeighbors
 
 importlib.reload(utils)
 

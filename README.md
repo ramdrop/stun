@@ -4,58 +4,65 @@
 - Ubuntu 18.04, python 3.8, A100
 - PyTorch 1.8.1 + CUDA 11.1
 
-#### 1. Pittsburgh dataset and pretrained models 📨
-
+#### 1. Download the Pittsburgh dataset and pretrained models 📨
 ```shell
 bash ./download.sh
 ```
 
-then the files will be downloaded and saved in the following folders:
+the files will be downloaded and saved in the following folders:
 
 ```shell
 pittsburgh
 ├── database
 ├── query
-├── structure
+└── structure
 
 logs
 ├── student_contrast
 ├── student_quadruplet
 ├── student_triplet
-├── teacher_triplet
-
+└── teacher_triplet
 ```
 
-#### 2. Evaluate STUN 🔍
+#### 2. Evaluate the pretrained models 🔍
 
-1. STUN
-
-   ```python
+   ```shell
+   # STUN
    python main.py  --resume=logs/student_triplet/ckpt.pth.tar
-   ```
-2. STUN (Constrast)
-
-   ```python
+   
+   # STUN (Constrast)
    python main.py --resume=logs/student_constrast/ckpt.pth.tar
-   ```
-3. STUN (Quadruplet)
 
-   ```python
+   # STUN (Quadruplet)
    python main.py --resume=logs/student_quadruplet/ckpt.pth.tar
-   ```
-4. Standard Triplet
 
-   ```python
+   # Standard Triplet
    python main.py --phase=test_tea	 --resume=logs/teacher_triplet/ckpt.pth.tar
+
    ```
 
 #### 3. Plot results 📈
 
-```python
+```shell
 python vis_results.py
 # you can plot results of different models by populate the NETWORK variable.
 ```
 
+#### 4. Train and evaluate STUN from scratch 🧭
+
+   ```shell
+   # train the teacher net
+   python main.py --phase=train_tea --loss=tri
+   
+   # train the student net supervised by the pretrained teacher net
+   python main.py --phase=train_stu --resume=[teacher_net_xxx/ckpt_best.pth.tar]
+
+   ```
+   After analyzing empirical figures, we found the correlation between recall@N and uncertainty level evolve into a sensible trend after 30 epochs. But ECE (Expected Calibration Error) will diverge if the student network is excessively trained. As a result, we focused our examination on the model's performance from epoch=30 to epoch=35 and chose the one with the lowest ECE.
+   ```shell
+      # evaluate 
+      ./eval_batch.sh
+   ```
 ![ece.png](ece.jpg)
 
 |                                    |                     r@1/5/10 ↑                     |                    mAP@1/5/10 ↑                    |      AP ↑      |         ECE{r@1/5/10}↓         |             ECE{mAP@1/5/10}↓             |    ECE{AP}↓    |

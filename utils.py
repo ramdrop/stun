@@ -1,18 +1,32 @@
-import numpy as np
-from sklearn.neighbors import NearestNeighbors
-import faiss
-from os.path import join, exists
-import os
-import shutil
-from scipy.spatial.distance import pdist, sqeuclidean, squareform
-from scipy import stats
-from tqdm import tqdm
-from pynvml import *
 from collections import namedtuple
+from os.path import join
+
+import faiss
+import numpy as np
+from pynvml import *
+from scipy import stats
 from scipy.io import loadmat
 from scipy.optimize import least_squares
 from skimage import io
-from PIL import Image
+
+
+def linear_fit(x, y, w, report_error=False):
+    def cost(p, x, y, w):
+        k = p[0]
+        b = p[1]
+        error = y - (k * x + b)
+        error *= w
+        return error
+
+    p_init = np.array([-1, 1])
+    ret = least_squares(cost, p_init, args=(x, y, w), verbose=0)
+    # print(ret['x'][0], ret['x'][1], )
+    y_fitted = ret['x'][0] * x + ret['x'][1]
+    error = ret['cost']
+    if report_error:
+        return y_fitted, error
+    else:
+        return y_fitted
 
 
 def reduce_sigma(sigma, std_or_sq, log_or_linear, hmean_or_mean):

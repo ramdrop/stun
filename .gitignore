@@ -3,3 +3,6 @@ tmp/
 __pycache__/
 logs/
 *.zip
+dropbox_shared/
+wandb/
+.vscode/
